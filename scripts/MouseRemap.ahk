@@ -1,8 +1,9 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
 
 ; =========================================================
 ; mouse-remap-windows / scripts / MouseRemap.ahk
-; 版本：v1.0.0  |  更新：2026-08-05
+; 版本：v1.1.0  |  更新：2026-08-05
 ; 作者：徐雨轩（银月辅助完成）
 ;
 ; 功能说明：
@@ -13,17 +14,8 @@
 ;       单击(有选中) = 复制 (Ctrl+C)
 ;       长按 >0.35s  = 删除 (Backspace)
 ;       双击 <0.25s  = 覆盖粘贴 (Ctrl+V，选中状态下自动覆盖)
-;
-; 依赖前置条件：
-;   注册表键值已设置（由 setup.ps1 自动完成）：
-;   HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-;   DisableXMouseButtonNavigation = 1
 ; =========================================================
 
-
-; =========================================================
-; 前侧键 (XButton2) 复合逻辑
-; =========================================================
 $XButton2::
 {
     ; 长按检测 (按住超过 0.35 秒)
