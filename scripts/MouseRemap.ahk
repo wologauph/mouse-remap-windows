@@ -1,16 +1,13 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+InstallMouseHook
 
 ; =========================================================
-; mouse-remap-windows / scripts / MouseRemap.ahk
-; 版本：v1.4.0  |  更新：2026-08-05
-; 作者：徐雨轩（银月辅助完成）
+; MouseRemap.ahk  v3.0  |  2026-08-12
 ;
-; 核心修复：
-;   1. 彻底移除 Win+H（不再弹出微软自带语音）
-;   2. 后侧键 ($XButton1) 全局吃掉后退信号，同时发送 F13 给第三方语音软件
-;   3. 前侧键 ($XButton2) 增加 20ms+30ms 延迟缓冲与 0.25s ClipWait，
-;      完美解决 Chrome/Edge 多进程渲染引擎下的复制粘贴失效问题
+; 原理：AHK 先于 SayIt 启动 → SayIt 的钩子排在 AHK 之上
+;       侧键1按下时：SayIt 钩子先触发（语音识别）→ AHK 钩子后触发（拦截浏览器后退）
+;       侧键2：智能复制/粘贴/删除/覆盖，浏览器前进彻底拦截
 ; =========================================================
 
 ShowTip(text)
@@ -20,48 +17,45 @@ ShowTip(text)
 }
 
 ; ---------------------------------------------------------
-; 后侧键 (XButton1) ── 100% 拦截后退！绝不后退！不弹微软语音！
+; 后侧键 (XButton1) → 只拦截浏览器后退，SayIt 自己处理语音
 ; ---------------------------------------------------------
 $XButton1::
 {
-    ShowTip("🎤 语音模式 (后退已拦截)")
-    Send("{F13}")  ; 发送 F13 给第三方语音软件
-    return        ; 彻底切断 XButton1，保证所有浏览器都不后退
+    ShowTip("🎤 语音")
+    ; 不发送任何键！SayIt 已通过自己的钩子处理。
+    ; 这里只负责不让浏览器收到后退信号。
+    return
 }
 
 ; ---------------------------------------------------------
-; 前侧键 (XButton2) ── 复制 / 粘贴 / 长按删除 / 双击覆盖
-; 优化 Chrome / Edge / 网页环境下的复制响应速度
+; 前侧键 (XButton2) → 智能复制/粘贴/删除/覆盖，拦截浏览器前进
 ; ---------------------------------------------------------
 $XButton2::
 {
-    ; 1. 长按检测 (> 0.35 秒)
+    ; 长按 > 0.35s → 删除一个字符
     if !KeyWait("XButton2", "T0.35")
     {
-        ShowTip("✂️ 删除 (长按)")
+        ShowTip("✂️ 删除")
         Send("{Backspace}")
         KeyWait("XButton2")
         return
     }
 
-    ; 2. 双击检测 (0.2 秒内再次按下)
+    ; 双击 0.2s 内 → 覆盖粘贴
     if KeyWait("XButton2", "D T0.20")
     {
-        ShowTip("📋 覆盖粘贴 (双击)")
+        ShowTip("📋 覆盖粘贴")
         Send("^v")
         KeyWait("XButton2")
         return
     }
 
-    ; 3. 单击逻辑：优化浏览器剪贴板响应
+    ; 单击 → 复制；无内容则粘贴
     savedClip := ClipboardAll()
     A_Clipboard := ""
-    
-    Sleep(20)       ; 缓冲：给浏览器焦点响应按键
-    Send("^c")      ; 发送复制
-    Sleep(30)       ; 缓冲：给 Chrome 多进程渲染引擎写入剪贴板的时间
-
-    ; 等待最多 0.25 秒（适应 Chrome/Edge/Firefox 的异步剪贴板延迟）
+    Sleep(20)
+    Send("^c")
+    Sleep(30)
     if ClipWait(0.25)
     {
         ShowTip("📄 已复制")
